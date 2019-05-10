@@ -1,4 +1,4 @@
-# melee-name-switcher
+# Slippi Player Name Switcher
 
 In Super Smash Bros Melee for the Nintendo Gamecube, this application rotates names of 5 people for a stream overlay. On a stream of playing doubles, the teams will usually be displayed as Player1/Player2 vs Player3/Player4 or something similar. If there's a fifth player waiting in the rotation, they will usually replace the first player out on the losing team. This only applies to 2v2 games
 
