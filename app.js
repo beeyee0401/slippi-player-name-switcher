@@ -13,7 +13,6 @@ function findFirstOut(file){
 		const frames = game.getFrames();
 
 		if (stats.gameComplete){
-			// Get game settings – stage, characters, etc
 			var playerTeamMapping = {};
 			for (var i = 0; i < settings.players.length; i++){
 				if (!(settings.players[i].teamId in playerTeamMapping)){
@@ -25,7 +24,7 @@ function findFirstOut(file){
 			
 			firstOutOnLosingTeam = checkFrameForFirstOut(playerTeamMapping, frames[stats.lastFrame]);
 			// if this is null, it's because they died very close to the same time
-			// but likely still not on the same frame, for some reason I can't just use the last frame always
+			// the data format is different if the teammates died at close to the same time
 			if (firstOutOnLosingTeam === null){
 				firstOutOnLosingTeam = checkFrameForFirstOut(playerTeamMapping, frames[stats.lastFrame - 1]);
 			}
