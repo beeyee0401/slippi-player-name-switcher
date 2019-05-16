@@ -4,7 +4,7 @@ const fs = require('fs');
 const config = require('./config.json');
 var fileAlreadyProcessed = null;
 
-function findFirstOut(file){ 
+function findFirstOut(file){
 	var firstOutOnLosingTeam = null;
 	try {
 		const game = new SlippiGame(config.slippiReplayFolder + file);
@@ -22,12 +22,14 @@ function findFirstOut(file){
 				}
 			}
 			
-			firstOutOnLosingTeam = checkFrameForFirstOut(playerTeamMapping, frames[stats.lastFrame]);
+			var losingTeamId = checkFrameForLosingTeam(playerTeamMapping, frames[stats.lastFrame]);
 			// if this is null, it's because they died very close to the same time
 			// the data format is different if the teammates died at close to the same time
-			if (firstOutOnLosingTeam === null){
-				firstOutOnLosingTeam = checkFrameForFirstOut(playerTeamMapping, frames[stats.lastFrame - 1]);
+			if (losingTeamId === null){
+				losingTeamId = checkFrameForLosingTeam(playerTeamMapping, frames[stats.lastFrame - 1]);
 			}
+
+			firstOutOnLosingTeam = findFirstPlayerOut(playerTeamMapping[losingTeamId], frames, stats.lastFrame);
 		}
 	}
 	catch (error) {
@@ -37,10 +39,28 @@ function findFirstOut(file){
 	return firstOutOnLosingTeam;
 }
 
-function checkFrameForFirstOut(playerTeamMapping, frame){
-	var firstOutOnLosingTeam = null;
-	Object.keys(playerTeamMapping).forEach(function(key){
-		var teamPlayerIndexes = playerTeamMapping[key];
+function findFirstPlayerOut(losingTeamArr, frames, lastFrame){
+	var firstPlayerOut = null;
+	// Need the lastFrame for the loop instead of length because frames is an object, not an array
+	for (var i = 0; i < lastFrame; i++){
+		var frame = frames[i];
+		for (var j = 0; j < losingTeamArr.length; j++){
+			var playerIndex = losingTeamArr[j];
+			if (frame.players[playerIndex].post.stocksRemaining === 0){
+				firstPlayerOut = playerIndex;
+			}
+		}
+		if (firstPlayerOut !== null){
+			break;
+		}
+	}
+	return firstPlayerOut;
+}
+
+function checkFrameForLosingTeam(playerTeamMapping, frame){
+	var losingTeamId = null;
+	Object.keys(playerTeamMapping).forEach(function(teamId){
+		var teamPlayerIndexes = playerTeamMapping[teamId];
 		var firstPlayer = frame.players.filter(function(p){
 			return p.pre.playerIndex == teamPlayerIndexes[0];
 		})[0];
@@ -50,19 +70,19 @@ function checkFrameForFirstOut(playerTeamMapping, frame){
 		
 		if (typeof firstPlayer === 'undefined'){
 			if (secondPlayer.post.stocksRemaining === 0){
-				firstOutOnLosingTeam = teamPlayerIndexes[0];
+				losingTeamId = teamId;
 			}
 		} else if (typeof secondPlayer === 'undefined') {
 			if (firstPlayer.post.stocksRemaining === 0){
-				firstOutOnLosingTeam = teamPlayerIndexes[1];
+				losingTeamId = teamId;
 			}
 		} else if (firstPlayer.post.stocksRemaining === 0 && secondPlayer.post.stocksRemaining > 0){
-			firstOutOnLosingTeam = teamPlayerIndexes[0];
+			losingTeamId = teamId;
 		} else if (secondPlayer.post.stocksRemaining === 0 && firstPlayer.post.stocksRemaining > 0){
-			firstOutOnLosingTeam = teamPlayerIndexes[1];
+			losingTeamId = teamId;
 		}
 	});
-	return firstOutOnLosingTeam;
+	return losingTeamId;
 }
 
 function getNewestReplay(){
@@ -85,6 +105,7 @@ function swapPlayers(firstPlayerIndexOut){
 	var playerOut = readFile(playerFile);
 	writeFile(5, playerOut);
 	writeFile(playerFile, playerFive);
+	console.log(`Swapped ${playerOut} for ${playerFive}`);
 }
 
 function readFile(player){
@@ -96,7 +117,7 @@ function writeFile(playerFile, newText){
 	if (typeof newText !== 'undefined' && newText !== null){
 		fs.writeFile(`${config.playerFileFolder}player${playerFile}.txt`, newText, function(err){
 			if(err) {
-		        return console.log(err);
+				console.log(err);
 		    }
 		});		
 	}
