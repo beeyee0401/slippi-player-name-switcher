@@ -5,7 +5,7 @@ const config = require('./config.json');
 var fileAlreadyProcessed = null;
 
 function findFirstOut(file){
-	var firstPlayerOut = null;
+	var firstOutOnLosingTeam = null;
 	try {
 		const game = new SlippiGame(config.slippiReplayFolder + file);
 		const settings = game.getSettings();
@@ -29,14 +29,14 @@ function findFirstOut(file){
 				losingTeamId = checkFrameForLosingTeam(playerTeamMapping, frames[stats.lastFrame - 1]);
 			}
 
-			firstPlayerOut = findFirstPlayerOut(playerTeamMapping[losingTeamId], frames, stats.lastFrame);
+			firstOutOnLosingTeam = findFirstPlayerOut(playerTeamMapping[losingTeamId], frames, stats.lastFrame);
 		}
 	}
 	catch (error) {
 		// It errors sometimes in the 3rd party slp parser, so just do nothing and wait for next run
 		console.log(error);
 	}
-	return firstPlayerOut;
+	return firstOutOnLosingTeam;
 }
 
 function findFirstPlayerOut(losingTeamArr, frames, lastFrame){
@@ -59,8 +59,8 @@ function findFirstPlayerOut(losingTeamArr, frames, lastFrame){
 
 function checkFrameForLosingTeam(playerTeamMapping, frame){
 	var losingTeamId = null;
-	Object.keys(playerTeamMapping).forEach(function(key){
-		var teamPlayerIndexes = playerTeamMapping[key];
+	Object.keys(playerTeamMapping).forEach(function(teamId){
+		var teamPlayerIndexes = playerTeamMapping[teamId];
 		var firstPlayer = frame.players.filter(function(p){
 			return p.pre.playerIndex == teamPlayerIndexes[0];
 		})[0];
@@ -70,16 +70,16 @@ function checkFrameForLosingTeam(playerTeamMapping, frame){
 		
 		if (typeof firstPlayer === 'undefined'){
 			if (secondPlayer.post.stocksRemaining === 0){
-				losingTeamId = key;
+				losingTeamId = teamId;
 			}
 		} else if (typeof secondPlayer === 'undefined') {
 			if (firstPlayer.post.stocksRemaining === 0){
-				losingTeamId = key;
+				losingTeamId = teamId;
 			}
 		} else if (firstPlayer.post.stocksRemaining === 0 && secondPlayer.post.stocksRemaining > 0){
-			losingTeamId = key;
+			losingTeamId = teamId;
 		} else if (secondPlayer.post.stocksRemaining === 0 && firstPlayer.post.stocksRemaining > 0){
-			losingTeamId = key;
+			losingTeamId = teamId;
 		}
 	});
 	return losingTeamId;
